@@ -11,3 +11,11 @@ export enum MaterialType {
     meshDepth = "meshDepth",
     meshPhong = "meshPhong",
 }
+
+
+export enum MeshType {
+    Sphere = "sphere",
+    Torus = "torus",
+    Line = "Line",
+    Cylinder = "Cylinder"
+}

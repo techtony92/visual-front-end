@@ -2,7 +2,7 @@ import { getTheatreProject, getPropertiesSheet, createTheatreProject, createShee
 import { getRefById } from "./JSX_Ref";
 import { getCollection } from "./mem_constants/collections";
 import { get3Dlib } from "./three/threeInit";
-import { Color , Mesh, DirectionalLight, BufferGeometry, MeshBasicMaterial} from "three";
+import { NormalBufferAttributes, Object3DEventMap,DoubleSide, Group, Color , Mesh, DirectionalLight, BufferGeometry, MeshBasicMaterial, LineBasicMaterial, MeshPhongMaterial, LineSegments} from "three";
 import { BaseGeometry } from "./three/geometryTypes/BaseGeometry";
 import { BaseMaterial } from "./three/materialTypes/BaseMaterial";
 import { MaterialType, GeometryType } from "./types/types";
@@ -87,6 +87,7 @@ export function activeTheatre(){
     const threeTheaterProject = createTheatreProject("threeTheatreProject");
     const threeAttributeConfig = createSheet(threeTheaterProject, "threeAttributeConfig");
     threeLib.scene.background = new Color("#333333");
+    
     if(componentRoot.current && threeAttributeConfig){
         let threeConfigObserver = threeAttributeConfig.object("threeConfigProperties",{
             rendererProperties:{
@@ -109,33 +110,48 @@ export function activeTheatre(){
     }
     let sphereGeometryConfig:BufferGeometry|undefined = undefined
     let sphereMaterialConfig:MeshBasicMaterial|undefined = undefined
+    let LineMaterial:LineBasicMaterial|undefined = undefined;
+    let MeshPhongMaterial:MeshPhongMaterial|undefined = undefined;
+    let sphereSegments:LineSegments|undefined = undefined;
     let sphere:Mesh|undefined = undefined;
+
     const sphereProject = createTheatreProject("threeSphere");
     const spherePropertySheet = createSheet(sphereProject, "sphereProperties");
     if(componentRoot.current && spherePropertySheet){
         const spherePropertyObserver = spherePropertySheet.object("Sphere Properties",{
-            radius:types.number(15, {range:[1,30]}),
-            widthSegments:types.number(32, {range:[3, 64]})
+            radius:types.number(15, {range:[0.1,30.0]}),
+            widthSegments:types.number(32, {range:[3, 64]}),
+            enableMesh:types.boolean(false, {label:"Enable Mesh"}),
+            persistMesh:types.boolean(false, {label:"Persist Mesh"}),
+        
         })
 
-
         spherePropertyObserver.onValuesChange((updates)=>{
-            if(sphereGeometryConfig !== undefined){
-                sphereGeometryConfig.dispose();
-                sphereGeometryConfig = undefined;
+            if(sphereSegments !== undefined){
+                sphereSegments.geometry.dispose();
+                threeLib.scene.remove(sphereSegments);
             }
-            if(sphereMaterialConfig !== undefined){
-                sphereMaterialConfig.dispose();
-                sphereMaterialConfig = undefined;
-            }
+
             if(sphere !== undefined){
-                sphere.clear();
-                sphere = undefined;
+                if(updates.persistMesh === false){
+                    sphere.geometry.dispose();
+                    threeLib.scene.remove(sphere);    
+                }
+                
             }
+
+            LineMaterial = BaseMaterial(MaterialType.lineBasic, {color: 0xffffff, transparent: true, opacity: 0.5 } );
+            MeshPhongMaterial = BaseMaterial(MaterialType.meshPhong, {color: 0x156289, emissive: 0x072534, side: DoubleSide, flatShading: true })
             sphereGeometryConfig = BaseGeometry(GeometryType.Sphere, updates.radius, updates.widthSegments);
-            sphereMaterialConfig = BaseMaterial(MaterialType.meshBasic, {color:0xffff00})
-            sphere = new Mesh(sphereGeometryConfig, sphereMaterialConfig);
-            threeLib.scene.add(sphere);
+            //sphereMaterialConfig = BaseMaterial(MaterialType.meshBasic, {color:0xffff00});
+            sphereSegments = new LineSegments<BufferGeometry<NormalBufferAttributes>, LineBasicMaterial, Object3DEventMap>(sphereGeometryConfig, LineMaterial);
+            sphere = new Mesh(sphereGeometryConfig, MeshPhongMaterial);
+            
+            threeLib.scene.add(sphereSegments);
+            if(updates.enableMesh){
+                threeLib.scene.add(sphere);
+            }
+            
         })
     }
 }

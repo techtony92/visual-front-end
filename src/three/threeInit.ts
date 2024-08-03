@@ -16,13 +16,13 @@ function initThree(componentRoot:HTMLElement){
     const renderer = new Three.WebGLRenderer({antialias:true});
     renderer.setPixelRatio( window.devicePixelRatio );
     const camera = new Three.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    renderer.setAnimationLoop(animate);
+    
     camera.position.z = 30;
     componentRoot.appendChild(renderer.domElement);
     function animate(){
         renderer.render(scene, camera)
     }
-
+    renderer.setAnimationLoop(animate);
     return {
         scene,
         renderer,

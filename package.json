@@ -15,7 +15,7 @@
     "typescript": "^5.2.2",
     "vite": "^5.3.4"
   },
-  "packageManager": "yarn@4.3.1",
+  "packageManager": "yarn@4.4.0",
   "dependencies": {
     "@theatre/core": "^0.7.2",
     "@theatre/studio": "^0.7.2",
