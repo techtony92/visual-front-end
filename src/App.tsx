@@ -12,8 +12,8 @@ function App(){
    
     let divRef = useRef<HTMLDivElement| null>(null)
     return(
-        <div ref={divRef}>
-            <h1>App Working</h1>
+        <div id="titleParent" ref={divRef}>
+            <h1 id="appTitle">App Working</h1>
         </div>
     )
     

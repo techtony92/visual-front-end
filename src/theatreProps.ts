@@ -7,8 +7,12 @@ import { BaseGeometry } from "./three/geometryTypes/BaseGeometry";
 import { BaseMaterial } from "./three/materialTypes/BaseMaterial";
 import { MaterialType, GeometryType } from "./types/types";
 import { types } from "@theatre/core";
-
+import GridHelper from "./three/grid/GridHelper";
 // CSS Theatre
+
+let scrollPercent = 0;
+
+
 export function activeTheatre(){
     const currentProject = getTheatreProject("Visual-Front-end");
     const propertySheet = getPropertiesSheet();
@@ -58,6 +62,8 @@ export function activeTheatre(){
         componentRoot.current.style.cssText = `
             transform-style:preserve-3d;
             perspective:1000px;
+            width:100%;
+            height:100%;
         `
         shadowDiv.onValuesChange((newValues) =>{
             div.style.left = newValues.position.x + 'px';
@@ -87,8 +93,8 @@ export function activeTheatre(){
     const threeTheaterProject = createTheatreProject("threeTheatreProject");
     const threeAttributeConfig = createSheet(threeTheaterProject, "threeAttributeConfig");
     threeLib.scene.background = new Color("#333333");
-    
     if(componentRoot.current && threeAttributeConfig){
+   
         let threeConfigObserver = threeAttributeConfig.object("threeConfigProperties",{
             rendererProperties:{
                 width:0,
@@ -96,7 +102,10 @@ export function activeTheatre(){
             },
             cameraProperties:{
                 position:{
+                    x:0,
+                    y:0,
                     z:30,
+
                 }
             }
         });
@@ -104,6 +113,9 @@ export function activeTheatre(){
 
 
         threeConfigObserver.onValuesChange((updated) =>{
+            threeLib.camera.position.x = updated.cameraProperties.position.x;
+            threeLib.camera.position.y = updated.cameraProperties.position.y;
+            threeLib.camera.position.z = updated.cameraProperties.position.z;
             threeLib.renderer.setSize(updated.rendererProperties.width, updated.rendererProperties.height);
 
         })
@@ -153,5 +165,125 @@ export function activeTheatre(){
             }
             
         })
+        const threeGridProject = createTheatreProject("threeGrid");
+        const threeGridProperties = createSheet(threeGridProject, "theeGridProperties");
+        const helper = GridHelper({size: 10, divisions: 10, colorOfLineCenter: '0xaec6cf', colorOfGridLines:"0xaec6cf" });
+        threeLib.scene.add(helper);
+        if(threeGridProperties && componentRoot.current){
+            const threeGridObserver = threeGridProperties.object("gridProperties",{
+                position:{
+                    x:0,
+                    y:0,
+                    z:types.number(20, {range:[0 , 50]}),
+                }
+
+            })
+
+            threeGridObserver.onValuesChange((updates) =>{
+                helper.position.x = updates.position.x;
+                helper.position.y = updates.position.y;
+                helper.position.z = updates.position.z;
+            })
+
+        }
     }
+
+    function onWindowResize(){
+        threeLib.camera.aspect = window.innerWidth / window.innerHeight;
+        threeLib.camera.updateProjectionMatrix();
+        threeLib.renderer.setSize(window.innerWidth, window.innerHeight);
+        threeLib.renderer.render(threeLib.scene,threeLib.camera)
+    }
+
+    window.addEventListener("resize", onWindowResize, false);
+        /* Liner Interpolation
+        * lerp(min, max, ratio)
+        * eg,
+        * lerp(20, 60, .5)) = 40
+        * lerp(-20, 60, .5)) = 20
+        * lerp(20, 60, .75)) = 50
+        * lerp(-20, -10, .1)) = -.19
+        */
+        function lerp(x: number, y: number, a: number): number {
+            return (1 - a) * x + a * y
+        }
+
+        function scalePercent(start: number, end: number) {
+            return (scrollPercent - start) / (end - start)
+        }
+        // definition of our animation steps
+        const animationScripts: { start: number; end: number; func: () => void }[] = [];
+
+        animationScripts.push({
+            start: 0,
+            end: 101,
+            func: () => {
+                let rgbGreen = MeshPhongMaterial!.color.g
+                //material.color.g
+                rgbGreen -= 0.05
+                if (rgbGreen <= 0) {
+                    rgbGreen = 1.0
+                }
+                MeshPhongMaterial!.color.g = rgbGreen;
+                // material.color.g = g
+            },
+        })
+        //add an animation that moves the camera between 60-80 percent of scroll
+        animationScripts.push({
+            start: 60,
+            end: 80,
+            func: () => {
+                threeLib.camera.position.x = lerp(0, 5, scalePercent(60, 80))
+                threeLib.camera.position.y = lerp(1, 5, scalePercent(60, 80))
+               // threeLib.camera.lookAt(cube.position)
+                //console.log(camera.position.x + " " + camera.position.y)
+            },
+        });
+
+        function playScrollAnimations() {
+            animationScripts.forEach((a) => {
+                if (scrollPercent >= a.start && scrollPercent < a.end) {
+                    a.func()
+                }
+            })
+        }
+
+        const scrollProgress = document.createElement("div");
+        scrollProgress.setAttribute("id", "scrollProgress");
+        scrollProgress.style.cssText = `
+        position:absolute;
+        bottom:10px;
+        left:0px;
+        font-size:3.2rem;
+        font-weight:500;
+        `;
+
+        componentRoot.current?.appendChild(scrollProgress);
+        document.body.onscroll = () => {
+            //calculate the current scroll progress as a percentage
+            scrollPercent =
+                ((document.documentElement.scrollTop || document.body.scrollTop) /
+                    ((document.documentElement.scrollHeight || document.body.scrollHeight) -
+                        document.documentElement.clientHeight)) * 100;
+                (document.getElementById('scrollProgress') as HTMLDivElement).innerText =
+                'Scroll Progress : ' + scrollPercent.toFixed(2)
+
+        }
+        
+        window.addEventListener("scroll", playScrollAnimations);
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        // Generate Section elements:
+        for(let i = 0; i < 6; i++){
+            const section = document.createElement("section");
+            section.setAttribute("id", `section${i}`);
+            section.style.cssText = `
+                
+                width:100%;
+                height:100vh;
+            `
+            componentRoot.current?.appendChild(section);
+        }
+        // const stats = new Stats()
+        // document.body.appendChild(stats.dom)
+
 }

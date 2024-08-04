@@ -18,7 +18,24 @@ function initThree(componentRoot:HTMLElement){
     const camera = new Three.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000);
     
     camera.position.z = 30;
-    componentRoot.appendChild(renderer.domElement);
+    const layer3D = document.createElement("div");
+    layer3D.setAttribute("id","layer3D");
+    layer3D.style.cssText = `
+    position:fixed;
+    width:100%;
+    height:100vh;
+    z-index:10;
+    `
+    componentRoot.appendChild(layer3D);
+
+    renderer.domElement.style.cssText = `
+        position:absolute;
+        left:50%;
+        transform:translateX(-50%);
+        width:75%;
+        height:75%;
+    `
+    layer3D.appendChild(renderer.domElement);
     function animate(){
         renderer.render(scene, camera)
     }
